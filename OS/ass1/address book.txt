@@ -1,0 +1,133 @@
+#!/bin/bash
+
+file=""
+
+filename(){
+	local name="$1"
+	file="$name"
+}
+
+create(){
+	if [ ! -e "$file" ]; then
+	touch "$file"
+	echo "|name|phone|address|" > "$file"
+	fi
+}
+
+check(){
+	if [ ! -e "$file" ]; then
+		return 0;
+	else
+		return 1;
+	fi
+}
+
+insert(){
+	if [ -e "$file" ]; then
+	echo "Enter a Entry:"
+	read -p "Name :" name
+	read -p "Phone :" phn
+	read -p "Address :" adr
+	
+	echo "|$name|$phn|$adr|" >> "$file"	
+	fi
+}
+
+update(){
+	if [ -e "$file" ]; then
+	read -p "Update for name : " name
+	
+		if ! grep -qi "$name" "$file"; then
+		echo "Entry not found."
+		fi
+	sed -i "/$name/d" "$file"
+	read -p "New Phone :" phn
+	read -p "New Address :" adr
+	echo "|$name|$phn|$adr" >> "$file"
+	fi
+}
+
+delete(){
+	if [ -e "$file" ]; then
+	read -p "Delete for name : " name
+		if ! grep -qi "$name" "$file"; then
+		echo "Entry not found."
+		fi
+	sed -i "/$name/d" "$file"
+	echo "Delete."
+	fi
+}
+
+search(){
+	if [ -e "$file" ]; then
+		read -p "Search for name :" name
+		if ! grep -qi "$name" "$file"; then
+			echo "Entry not Found"	
+		fi
+		echo "Search the Item for name:"
+		grep -i "$name" "$file"
+	fi
+}
+
+display(){
+
+	if [ -e "$file" ]; then
+		echo " || The Address Book  ||"
+		cat "$file"
+	else
+		echo "File Not Found."
+	fi
+
+}
+
+main(){
+	echo "Welcome to address Book"
+	while true; do
+		echo ""
+		echo "1. Create a file :)"
+		echo "2. Check :)"
+		echo "3. Insert in a file :-)"
+		echo "4. Search in a file :)"
+		echo "5. Update in a file :)"
+		echo "6. Delete in a file :)"
+		echo "7. View the file :)"
+		echo "8. Exit :("
+		echo ""
+		read -p "Select an option: " choice
+		echo ""
+		case "$choice" in
+			1)
+				read -p "Enter a File Name:" name
+				filename "$name"
+				create		
+				;;
+			2)								
+				if check; then
+					echo "File NotCreated"
+				else						
+					echo "File  Created"
+				fi 						
+				;;					
+			3)					
+				insert		
+				;;
+			4)
+				search	
+				;;
+			5)		
+				update		
+				;;
+			6)
+				delete	
+				;;
+			7)
+				display	
+				;;
+			*)
+				exit 0	
+				;;
+		
+		esac
+	done
+}
+main

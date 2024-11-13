@@ -1,0 +1,67 @@
+#include<stdio.h>
+#include<semaphore.h>
+#include<pthread.h>
+#include<stdlib.h>
+#include<unistd.h>
+
+#define N 5
+
+sem_t empty,full;
+pthread_mutex_t mutex;
+int buffer[N];
+int in=0,out=0;
+
+void *producer(void *pno){
+    int temp = 0;
+    for (int i = 0;i<N;i++){
+    temp = rand()%5;
+    sem_wait(&empty);
+    pthread_mutex_lock(&mutex);
+    buffer[in] = temp;
+    printf("\nProducer %c produces item %d at %d ",*(char *)pno,buffer[in],in);
+    in = (in+1)%N;
+    pthread_mutex_unlock(&mutex);
+    sem_post(&full);
+    }
+}
+
+void *consumer(void *cno){
+    int temp =0;
+    for(int i=0;i<N;i++){
+        sem_wait(&full);
+        pthread_mutex_lock(&mutex);
+        temp = buffer[out];
+        printf("\nConsumer %c comsumes item %d from %d",*(char *)cno,temp,out);
+        out = (out+1)%N;
+        pthread_mutex_unlock(&mutex);
+        sem_post(&empty);
+    } 
+}
+
+int main(){
+    sem_init(&empty,0,N);
+    sem_init(&full,0,N);
+
+    pthread_mutex_init(&mutex,NULL);
+    pthread_t pro[N],con[N];
+
+    char c[N] ={'a','b','c','d','e'};
+
+    for(int i =0;i<N;i++){
+        pthread_create(&pro[i],NULL,(void *)producer,&c[i]);
+    }
+    for(int i =0;i<N;i++){
+        pthread_create(&con[i],NULL,(void *)consumer,&c[i]);
+    }
+    for(int i =0;i<N;i++){
+        pthread_join(pro[i],NULL);
+    }
+    for(int i =0;i<N;i++){
+        pthread_join(con[i],NULL);
+    }
+
+    pthread_mutex_destroy(&mutex);
+    sem_destroy(&empty);
+    sem_destroy(&full);
+    return 0;
+}

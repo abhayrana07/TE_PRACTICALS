@@ -1,0 +1,38 @@
+#include<stdio.h>
+#include<unistd.h>
+#include<stdlib.h>
+#include<string.h>
+#include<sys/wait.h>
+
+void bubbler(int arr[],int n){
+    int i,j,temp;
+    for (i=0;i<n;i++){
+        for (int j=0;j<n-i-1;j++){
+            if(arr[j]<arr[j+1]){
+                temp = arr[j];
+                arr[j]=arr[j+1];
+                arr[j+1]=temp;
+            }
+        }
+    }
+        printf("\nSorted Array in Decending Order.\n");
+    for(int k=0;k<n;k++){
+        printf("%d - ",arr[k]);
+    }
+    printf("\n");
+}
+
+int main(int argc,char *argv[]){
+    int arr[1024],cnt;
+
+    char *input = strdup(argv[1]);
+    char *token = strtok(input," ");
+
+    while(token != NULL){
+        arr[cnt] = atoi(token);
+        cnt++;
+        token = strtok(NULL," ");
+    }
+    bubbler(arr,cnt);
+    printf("\nExevce Process Ended Succesfully.\n\n");
+}
