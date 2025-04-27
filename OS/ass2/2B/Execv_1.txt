@@ -1,59 +1,64 @@
-#include<stdio.h>
-#include<unistd.h>
-#include<stdlib.h>
-#include<string.h>
-#include<sys/wait.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <string.h>
 
-
-void bubble(int arr[],int n){
-    int i,j,temp;
-    for (i=0;i<n;i++){
-        for (int j=0;j<n-i-1;j++){
-            if(arr[j]>arr[j+1]){
+void bubbleSort(int arr[], int n) {
+    int i, j, temp;
+    for (i = 0; i < n-1; i++) {
+        for (j = 0; j < n-i-1; j++) {
+            if (arr[j] > arr[j+1]) {
                 temp = arr[j];
-                arr[j]=arr[j+1];
-                arr[j+1]=temp;
+                arr[j] = arr[j+1];
+                arr[j+1] = temp;
             }
         }
     }
-        printf("\nSorted Array in Assecending Order.\n");
-    for(int k=0;k<n;k++){
-        printf("%d - ",arr[k]);
-    }
 }
 
-int main(){
-        int n;
-        printf("Enter the number of elements\n");
-        scanf("%d",&n);
+int main(int argc, char *argv[]) {
+    int n, i;
+    printf("Enter the number of elements: ");
+    scanf("%d", &n);
+    int arr[n];
+    printf("Enter %d integers: ", n);
+    for (i = 0; i < n; i++) {
+        scanf("%d", &arr[i]);
+    }
 
-        int arr[n];
-        printf("Enter the Array elements:");
-        for (int i = 0; i < n; i++)
-        {
-            scanf("%d",&arr[i]);
+    bubbleSort(arr, n);
+
+    printf("Sorted array: ");
+    for (i = 0; i < n; i++) {
+        printf("%d ", arr[i]);
+    }
+    printf("\n");
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("Fork failed");
+        return 1;
+    }
+    
+    if (pid == 0) {
+        char *args[n+2];
+        args[0] = "./child_reverse";
+        for (i = 0; i < n; i++) {
+            args[i+1] = (char *)malloc(10 * sizeof(char));
+            snprintf(args[i+1], 10, "%d", arr[i]);
         }
+        args[n+1] = NULL;
 
-        bubble(arr,n);
+        execve(args[0], args, NULL);
 
-        char new_arr[1024] ={0};
-        for (int i=0;i<n;i++){
-            if(i>0) strcat(new_arr," ");
-            sprintf(new_arr + strlen(new_arr),"%d",arr[i]);
-        } 
+        perror("execve failed");
+        return 1;
+    } else {
+        wait(NULL);
+        printf("Child process finished executing\n");
+    }
 
-        pid_t p = fork();
-
-        if (p==0){
-            printf("\nChild ID :-%d",getpid());
-            char *args[] = {"./ass22",new_arr,NULL};
-
-            execvp(args[0],args);
-        }
-        else{
-            printf("\nParent ID :-%d",getpid());
-            wait(NULL);
-            printf("\nChild terminated.\n");
-        }
-
+    return 0;
 }
