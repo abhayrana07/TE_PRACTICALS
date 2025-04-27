@@ -1,133 +1,107 @@
 #!/bin/bash
 
-file=""
+address_book="address_book.txt"
 
-filename(){
-	local name="$1"
-	file="$name"
+create_address_book() {
+    if [[ ! -f "$address_book" ]]; 
+    then
+        touch "$address_book"
+        echo "Address book created."
+        echo "ID,Name,Phone" >> "$address_book"
+        echo "--,----,-----" >> "$address_book"
+        echo ""
+    else
+        echo "Address book already exists."
+    fi
 }
 
-create(){
-	if [ ! -e "$file" ]; then
-	touch "$file"
-	echo "|name|phone|address|" > "$file"
-	fi
+view_address_book() {
+    if [[ -f "$address_book" && -s "$address_book" ]]; then
+        echo "Displaying Address Book in Table format:"
+        column -t -s "," "$address_book"
+    else
+        echo "Address book is empty or doesn't exist."
+    fi
 }
 
-check(){
-	if [ ! -e "$file" ]; then
-		return 0;
-	else
-		return 1;
-	fi
+insert_record() {
+    echo ""
+    read -p "Enter ID: " id
+    read -p "Enter name: " name
+    read -p "Enter phone number: " phone
+    echo "$id,$name,$phone" >> "$address_book"
+    echo "Record inserted."
+    echo ""
 }
 
-insert(){
-	if [ -e "$file" ]; then
-	echo "Enter a Entry:"
-	read -p "Name :" name
-	read -p "Phone :" phn
-	read -p "Address :" adr
-	
-	echo "|$name|$phn|$adr|" >> "$file"	
-	fi
+delete_record() {
+    echo ""
+    read -p "Enter the ID to delete: " id
+    if grep -q "^$id," "$address_book"; 
+    then
+        grep -v "^$id," "$address_book" > temp.txt
+        if [[ ! -s temp.txt ]]; then
+            rm "$address_book"
+            echo "The address book is now empty."
+        else
+            mv temp.txt "$address_book"
+            echo "Record deleted."
+        fi
+    else
+        echo "Record with ID $id not found."
+    fi
+    echo ""
 }
 
-update(){
-	if [ -e "$file" ]; then
-	read -p "Update for name : " name
-	
-		if ! grep -qi "$name" "$file"; then
-		echo "Entry not found."
-		fi
-	sed -i "/$name/d" "$file"
-	read -p "New Phone :" phn
-	read -p "New Address :" adr
-	echo "|$name|$phn|$adr" >> "$file"
-	fi
+modify_record() {
+    echo ""
+    read -p "Enter the ID to modify: " id
+    if grep -q "^$id," "$address_book"; then
+        read -p "Enter new name: " new_name
+        read -p "Enter new phone number: " new_phone
+        new_record="$id,$new_name,$new_phone"
+        sed -i "/^$id,/c\\$new_record" "$address_book"
+        echo "Record modified."
+    else
+        echo "Record with ID $id not found."
+    fi
+    echo ""
 }
 
-delete(){
-	if [ -e "$file" ]; then
-	read -p "Delete for name : " name
-		if ! grep -qi "$name" "$file"; then
-		echo "Entry not found."
-		fi
-	sed -i "/$name/d" "$file"
-	echo "Delete."
-	fi
-}
+while true; do
+    echo "----------------------------------------"
+    echo "Address Book Menu:"
+    echo "1. Create Address Book"
+    echo "2. View Address Book"
+    echo "3. Insert Record"
+    echo "4. Delete Record"
+    echo "5. Modify Record"
+    echo "6. Exit"
+    echo "----------------------------------------"
+    read -p "Choose an option (1-6): " option
 
-search(){
-	if [ -e "$file" ]; then
-		read -p "Search for name :" name
-		if ! grep -qi "$name" "$file"; then
-			echo "Entry not Found"	
-		fi
-		echo "Search the Item for name:"
-		grep -i "$name" "$file"
-	fi
-}
-
-display(){
-
-	if [ -e "$file" ]; then
-		echo " || The Address Book  ||"
-		cat "$file"
-	else
-		echo "File Not Found."
-	fi
-
-}
-
-main(){
-	echo "Welcome to address Book"
-	while true; do
-		echo ""
-		echo "1. Create a file :)"
-		echo "2. Check :)"
-		echo "3. Insert in a file :-)"
-		echo "4. Search in a file :)"
-		echo "5. Update in a file :)"
-		echo "6. Delete in a file :)"
-		echo "7. View the file :)"
-		echo "8. Exit :("
-		echo ""
-		read -p "Select an option: " choice
-		echo ""
-		case "$choice" in
-			1)
-				read -p "Enter a File Name:" name
-				filename "$name"
-				create		
-				;;
-			2)								
-				if check; then
-					echo "File NotCreated"
-				else						
-					echo "File  Created"
-				fi 						
-				;;					
-			3)					
-				insert		
-				;;
-			4)
-				search	
-				;;
-			5)		
-				update		
-				;;
-			6)
-				delete	
-				;;
-			7)
-				display	
-				;;
-			*)
-				exit 0	
-				;;
-		
-		esac
-	done
-}
-main
+    case $option in
+        1|c)
+            create_address_book
+            ;;
+        2|v)
+            view_address_book
+            ;;
+        3|i)
+            insert_record
+            ;;
+        4|d)
+            delete_record
+            ;;
+        5|m)
+            modify_record
+            ;;
+        6|e)
+            echo "Exiting the program."
+            exit 0
+            ;;
+        *)
+            echo "Invalid option. Please try again."
+            ;;
+    esac
+done
