@@ -1,76 +1,87 @@
-#include<stdio.h>
-#include<sys/wait.h>
-#include<unistd.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h>
 
-void bubble(int arr[],int n){
-    int i,j,temp;
-    for (i=0;i<n;i++){
-        for (int j=0;j<n-i-1;j++){
-            if(arr[j]>arr[j+1]){
-                temp = arr[j];
-                arr[j]=arr[j+1];
-                arr[j+1]=temp;
-            }
-        }
-    }
-        printf("\nSorted Array in Assecending Order.\n");
-    for(int k=0;k<n;k++){
-        printf("%d - ",arr[k]);
-    }
-printf("\n");
-}
-void bubbler(int arr[],int n){
-    int i,j,temp;
-    for (i=0;i<n;i++){
-        for (int j=0;j<n-i-1;j++){
-            if(arr[j]<arr[j+1]){
-                temp = arr[j];
-                arr[j]=arr[j+1];
-                arr[j+1]=temp;
-            }
-        }
-    }
-        printf("\nSorted Array in Decending Order.\n");
-    for(int k=0;k<n;k++){
-        printf("%d - ",arr[k]);
-    }
-printf("\n");
-}
+#define MAX 30
 
-int main(){
-    int n;
-    printf("Enter the number of elements\n");
-    scanf("%d",&n);
-
-    int arr[n];
-    printf("Enter the Array elements:");
-    for (int i = 0; i < n; i++)
+void insertion_sort(int arr[], int n)
+{
+    int i, key, j;
+    for(i = 1; i < n; i++)
     {
-        scanf("%d",&arr[i]);
+        key = arr[i];
+        j = i - 1;
+        while(j >= 0 && arr[j] > key)
+        {
+            arr[j + 1] = arr[j];
+            j = j - 1;
+        }
+        arr[j + 1] = key;
+    }
+}
+
+void bubble_sort(int arr[], int n)
+{
+    int i, j, temp;
+    for(i = 0; i < n - 1; i++)
+    {
+        for(j = 0; j < n - i - 1; j++)
+        {
+            if(arr[j] > arr[j + 1])
+            {
+                temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
+        }
+    }
+}
+
+void print(int arr[], int n)
+{
+    for(int i = 0; i < n; i++)
+        printf("%d ", arr[i]);
+    printf("\n");
+}
+
+int main()
+{
+    int n, arr[MAX], pid;
+
+    printf("\nEnter the number of elements you want in the array: ");
+    scanf("%d", &n);
+
+    printf("Enter the array elements: ");
+    for(int i = 0; i < n; i++)
+        scanf("%d", &arr[i]);
+
+    pid = fork();
+
+    if(pid == 0)
+    {
+        printf("\n***** Child Process *****\n");
+        printf("Child process PID: %d\n", getpid());
+        printf("Parent process PID: %d\n", getppid());
+        insertion_sort(arr, n);
+        printf("Sorted array from Child Process (Insertion Sort): ");
+        print(arr, n);
+    }
+    else if(pid > 0)
+    {
+        printf("\n***** Parent Process *****\n");
+        printf("Parent process PID: %d\n", getpid());
+        wait(NULL);
+        printf("Child Process terminated\n");
+        bubble_sort(arr, n);
+        printf("Sorted array from Parent Process (Bubble Sort): ");
+        print(arr, n);
+    }
+    else
+    {
+        printf("\nERROR IN FORK!!\n");
     }
 
-    pid_t p = fork();
-
-    if (p==0){
-        printf("\nEntering in child process : %d",getpid());
-        printf("\nChilds Parent Process has pid :%d",getppid());
-        printf("\nSorting In Acessinding order :");
-        bubble(arr,n);
-
-        system("ps -el | grep init");
-
-    }
-    else if(p>1){
-        printf("\nEntering in Parent process : %d",getpid());
-        int id =0;
-        id = wait(NULL);
-        printf("\n\nChilds terminated wit pid:%d",id);
-        printf("\nSorting In Decending o rder :");
-        bubbler(arr,n);
-
-        system("ps -el | grep z");
-    }
-    
-    
+    return 0;
 }
