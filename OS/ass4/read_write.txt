@@ -1,64 +1,70 @@
-#include<stdio.h>
-#include<pthread.h>
-#include<stdlib.h>
-#include<unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
 
-#define reader 5
-#define writer 2
+#define NUM_READERS 5
+#define NUM_WRITERS 2
 
-pthread_mutex_t read_mutex;
-pthread_mutex_t resource_mutex;
+int sharedData = 0;
 
-void *wr(void *writeno){
-    while(1){
-    pthread_mutex_lock(&resource_mutex);
-    printf("\n %c->Writer is typing msg",*(char *)writeno);
-    pthread_mutex_unlock(&resource_mutex);
-    sleep(2);
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t writeLock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t readCountMutex = PTHREAD_MUTEX_INITIALIZER;
+
+int readCount = 0;
+
+void *reader(void *arg) {
+    pthread_mutex_lock(&readCountMutex);
+    readCount++;
+    if (readCount == 1) {
+        pthread_mutex_lock(&writeLock);
     }
+    pthread_mutex_unlock(&readCountMutex);
+
+    pthread_mutex_lock(&mutex);
+    printf("Reader %ld: Read sharedData = %d\n", (long)arg, sharedData);
+    pthread_mutex_unlock(&mutex);
+
+    pthread_mutex_lock(&readCountMutex);
+    readCount--;
+    if (readCount == 0) {
+        pthread_mutex_unlock(&writeLock);
+    }
+    pthread_mutex_unlock(&readCountMutex);
+
     return NULL;
 }
 
-void *re(void *readno){
-    int read_count =0;
-    while(1){
+void *writer(void *arg) {
+    pthread_mutex_lock(&writeLock);
 
-    pthread_mutex_lock(&read_mutex);
-    read_count++;
-    if (read_count == 1) pthread_mutex_lock(&resource_mutex);
-    pthread_mutex_unlock(&read_mutex);
+    pthread_mutex_lock(&mutex);
+    sharedData++;
+    printf("Writer %ld: Write sharedData = %d\n", (long)arg, sharedData);
+    pthread_mutex_unlock(&mutex);
 
-    printf("\n%c Reader is reading .",*(char *)readno);
-    pthread_mutex_lock(&read_mutex);
-    read_count--;
-    if (read_count == 0) pthread_mutex_unlock(&resource_mutex);
-    pthread_mutex_unlock(&read_mutex);
+    pthread_mutex_unlock(&writeLock);
 
-    sleep(2);
-    }
     return NULL;
 }
-int main(){
-    pthread_mutex_init(&read_mutex,NULL);
-    pthread_mutex_init(&resource_mutex,NULL);
 
-    pthread_t read[reader],write[writer];
-    char c[5] = {'c','h','u','t','k'};
-    char t[2] = {'6','9'};
-    for (int i=0;i<writer;i++){
-        pthread_create(&write[i],NULL,(void *)wr,&c[i]);
-    }
-    for (int i=0;i<reader;i++){
-        pthread_create(&read[i],NULL,(void *)re,&t[i]);
-    }
-    for (int i=0;i<writer;i++){
-        pthread_join(write[i],NULL);
-    }
-    for (int i=0;i<reader;i++){
-        pthread_join(read[i],NULL);
+int main() {
+    pthread_t readers[NUM_READERS], writers[NUM_WRITERS];
+
+    for (long i = 0; i < NUM_READERS; i++) {
+        pthread_create(&readers[i], NULL, reader, (void *)i);
     }
 
-    pthread_mutex_destroy(&read_mutex);
-    pthread_mutex_destroy(&resource_mutex);
+    for (long i = 0; i < NUM_WRITERS; i++) {
+        pthread_create(&writers[i], NULL, writer, (void *)i);
+    }
+
+    for (long i = 0; i < NUM_READERS; i++) {
+        pthread_join(readers[i], NULL);
+    }
+    for (long i = 0; i < NUM_WRITERS; i++) {
+        pthread_join(writers[i], NULL);
+    }
+
     return 0;
 }
