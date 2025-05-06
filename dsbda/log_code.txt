@@ -1,0 +1,87 @@
+DRIVER
+
+
+
+import java.io.IOException;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class driver {
+	public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
+		Configuration conf = new Configuration();
+		Job job = Job.getInstance(conf, "VWord_count");
+		
+		job.setJarByClass(driver.class);
+		job.setMapperClass(mapper.class);
+		job.setReducerClass(reducer.class);
+		
+		job.setOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(IntWritable.class);
+		
+		FileInputFormat.addInputPath(job, new Path(args[0]));
+		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+		
+		job.waitForCompletion(true);
+	}
+}
+
+
+MAPPER
+
+
+import java.io.IOException;
+import java.util.StringTokenizer;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+
+public class mapper extends Mapper<Object, Text, Text, IntWritable> {
+	private final static IntWritable one = new IntWritable(1);
+    private Text word = new Text();
+	public void map(Object offset, Text key, Context con) throws IOException, InterruptedException{
+		StringTokenizer token = new StringTokenizer(key.toString()," - - ");
+		if(token.hasMoreTokens())
+		{
+			word.set(token.nextToken());
+			con.write(word, one);
+		}
+	}
+}
+
+
+REDUCER
+
+
+import java.io.IOException;
+
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+
+public class reducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+
+    private Text maxIP = new Text();
+    private int maxCount = 0;
+
+    public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+        int sum = 0;
+        for (IntWritable val : values) {
+            sum += val.get();
+        }
+
+        if (sum > maxCount) {
+            maxCount = sum;
+            maxIP.set(key);
+        }
+    }
+
+    protected void cleanup(Context context) throws IOException, InterruptedException {
+        context.write(maxIP, new IntWritable(maxCount));
+    }
+}
